@@ -3,7 +3,7 @@ from llama_cpp import Llama
 import pymupdf
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 import time
-
+import os
 
 client = weaviate.Client(
     url="http://localhost:8080"
@@ -18,7 +18,7 @@ simply state that you don't know.
 Question: {question}"""
 
 # Load the model
-model = Llama(model_path="./Main-Model-7.2B-Q5_K_M.gguf", n_ctx=2048)
+model = Llama(model_path="./MLmodel/project_convex/Main-Model-7.2B-Q5_K_M.gguf", n_ctx=2048)
 
 text_splitter = RecursiveCharacterTextSplitter(
     chunk_size=300,
@@ -28,24 +28,25 @@ text_splitter = RecursiveCharacterTextSplitter(
 )
 
 # Load the model
-model2 = Llama(model_path="./bge-small-en-v1.5-f16.gguf", embedding=True, verbose=False)
+model2 = Llama(model_path="./MLmodel/project_convex/bge-small-en-v1.5-f16.gguf", embedding=True, verbose=False)
 
 
-# def load():
-#     text = ""
-#     # Open a document
-#     for doc in documents:
-#         doc_ = pymupdf.open(`./documents/${doc}.pdf`)
+def load():
+    folder_path = os.path.join('MLmodel/project_convex/documents')
+    text = ""
+    # Open a document
+    for file_name in os.listdir(folder_path):
+        doc_ = pymupdf.open("./MLmodel/project_convex/documents/{}".format(file_name))
+        # Extract all the text from the pdf document
+        for page in doc_:
+            result = page.get_text()
+            text+= result
 
-#     # Extract all the text from the pdf document
-#         for page in doc_:
-#             result = page.get_text()
-#             text+= result
-#     return text        
+    return text
 
 
 def storeVectorDB(text):
-    # delete class "Article" - THIS WILL DELETE ALL DATA IN THIS CLASS
+    # delete class "Pdf" - THIS WILL DELETE ALL DATA IN THIS CLASS
     client.schema.delete_class("Pdf")
 
     # Weaviate schema creation (if not already created)
@@ -95,9 +96,8 @@ def sawal(query_user):
         .with_additional(['certainty'])
         .do()
     )
-    # Print the result
+    # Get the result
     result = result['data']['Get']['Pdf']
-    # print("Query result:", result)
 
     response=model.create_chat_completion(
     messages=[
@@ -113,3 +113,10 @@ def sawal(query_user):
 
 # for chunk in stream:
 #     print(chunk['choices'][0]['delta'].get('content', ''), end='')
+
+
+def predict(question):
+    text = load()
+    storeVectorDB(text)
+    answer = sawal(question)
+    return answer

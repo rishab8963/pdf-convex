@@ -8,7 +8,7 @@ from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, login_user, UserMixin, login_required, current_user, logout_user
 from flask_cors import CORS
 from convex import ConvexClient
-# from MLmodel.project_convex.model import predict
+from MLmodel.project_convex.model import predict
 
 # from ml import predict
 from dotenv import load_dotenv
@@ -47,24 +47,24 @@ def load_user(user_id):
     return user
 
 
-# @app.route('/question', methods=['POST'])
-# def question():
-#     if request.is_json:
-#         data = request.get_json()
+@app.route('/question', methods=['POST'])
+def question():
+    if request.is_json:
+        data = request.get_json()
 
-#         user_query = data.get('question', None)
+        user_query = data.get('question', None)
 
-#         if user_query is None:
-#             return jsonify({'error': 'No question provided'}),400
-#         else:
-#             user_query = str(user_query)
-#             ans = predict(user_query)
-#             ans = str(ans)
+        if user_query is None:
+            return jsonify({'error': 'No question provided'}),400
+        else:
+            user_query = str(user_query)
+            ans = predict(user_query)
+            ans = str(ans)
 
-#         return jsonify({"answer":ans})
+        return jsonify({"answer":ans})
 
-#     else:
-#         return jsonify({"error": "Request must be JSON"}), 400
+    else:
+        return jsonify({"error": "Request must be JSON"}), 400
 
 
 @app.route('/registration', methods=['POST'])
@@ -163,12 +163,15 @@ def select_pdf():
         data = request.get_json()
 
     if 'selected_pdf_files' not in data:
-        return jsonify({'error': "pdf file not found"})
+        return jsonify({'error': "pdf file not selected"})
 
-    selected_pdf_array = data.get("selected_pdf_files")
+    selected_pdf_name_array = data.get("selected_pdf_files")
+
+    if len(selected_pdf_name_array) == 0:
+        return jsonify({'error': "pdf file not selected"})
 
     clear_documents()
-    for pdf_name in selected_pdf_array:
+    for pdf_name in selected_pdf_name_array:
         file_path = os.path.join(app.root_path, 'pdf_files', pdf_name)
         destination_path = os.path.join(app.root_path, 'MLmodel/project_convex/documents')
         shutil.copy(file_path,destination_path)
