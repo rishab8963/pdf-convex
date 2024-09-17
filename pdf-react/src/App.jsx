@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect} from "react";
 import { useNavigate } from "react-router-dom";
 import uploadIcon from "./assets/upload-svgrepo-com.png";
 import deleteIcon from "./assets/delete-svgrepo-com.png";
@@ -96,46 +96,47 @@ function App() {
     }
   };
 
-  const askQuestion = (e) => {
+  const askQuestion = async (e) => {
     const selected_names = selectedFiles.map((f) => f.pdf_name)
 
-    fetch("http://127.0.0.1:5000/selected", {
-      method : 'POST',
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        'selected_pdf_files' : selected_names,
-      }),
-    }).then((response) => {
-      if(!response.ok){
+    try{
+      const selectedResponse = await fetch("http://127.0.0.1:5000/selected", {
+        method : 'POST',
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          'selected_pdf_files' : selected_names,
+        }),
+      });
+      
+      if(!selectedResponse.ok){
           throw new Error("Selection Unsuccessful");
       }
-      return response.json();
-    }).then((jsonResponse) => {
-      console.log(jsonResponse)
-    }).catch((e) => {
-      console.error(`Error : ${e}`);
-    });
-
-    fetch("http://127.0.0.1:5000/question", {
-      method : 'POST',
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        'question' : chatInput,
-      }),
-    }).then((response) => {
-      if(!response.ok){
+  
+      const selectedJsonResponse = await selectedResponse.json();
+      console.log(selectedJsonResponse);
+  
+      const questionResponse = await fetch("http://127.0.0.1:5000/question", {
+        method : 'POST',
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          'question' : chatInput,
+        }),
+      });
+      
+      if(!questionResponse.ok){
           throw new Error("Query Unsuccessful");
       }
-      return response.json();
-    }).then((jsonResponse) => {
-      console.log(jsonResponse);
-      const newArray = [...summaryText, chatInput, jsonResponse.answer]
-      setSummaryText(newArray)
-      setChatInput("")
-    }).catch((e) => {
-      console.error(`Error : ${e}`);
-    });
-  };
+  
+      const questionJsonResponse = await questionResponse.json();
+      console.log(questionJsonResponse);
+  
+      const newArray = [...summaryText, chatInput, questionJsonResponse.answer];
+      setSummaryText(newArray);
+      setChatInput("");
+    }catch(error){
+      console.log(`Error : ${error}`);
+    }
+  }
 
   const handleChatInputChange = (e) =>{
     setChatInput(e.target.value);
