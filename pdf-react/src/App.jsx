@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import uploadIcon from "./assets/upload-svgrepo-com.png";
 import deleteIcon from "./assets/delete-svgrepo-com.png";
 import downloadIcon from "./assets/download-svgrepo-com.png";
+import sendIcon from "./assets/send-svgrepo-com.png";
 import "./index.css";
 
 const MAX_COUNT = 50;
@@ -13,10 +14,9 @@ function App() {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [fileLimit, setFileLimit] = useState(false);
   const [chatInput, setChatInput] = useState("");
-  const [summaryText, setSummaryText] = useState("");
+  const [summaryText, setSummaryText] = useState([]);
   const navigate = useNavigate();
   const [fileHistory, setfileHistory ] = useState([]);
-
 
   useEffect(() => {
     fetch("http://127.0.0.1:5000/account", {
@@ -51,40 +51,17 @@ function App() {
       headers: { "Content-Type": "application/json" },
       credentials: "include",
     })
-      .then((response) => {
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        return response.json();
-      })
-      .then((jsonResponse) => setfileHistory(jsonResponse.history))
-      .catch((error) => console.error("Error during fetch:", error));
+    .then((response) => {
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      return response.json();
+    })
+    .then((jsonResponse) => setfileHistory(jsonResponse.history))
+    .catch((error) => console.error("Error during fetch:", error));
   }, []);
 
-  const handleUploadFiles = (files) => {
-    const uploaded = [...uploadedFiles];
-    let limitExceeded = false;
-
-    files.some((file) => {
-      if (uploaded.findIndex((f) => f.name === file.name) === -1) {
-        uploaded.push(file);
-        if (uploaded.length >= MAX_COUNT) {
-          setFileLimit(true);
-        }
-        if (uploaded.length > MAX_COUNT) {
-          alert(`You can only add a maximum of ${MAX_COUNT} files`);
-          setFileLimit(false);
-          limitExceeded = true;
-          return true;
-        }
-      }
-      return false;
-    });
-
-    if (!limitExceeded) setUploadedFiles(uploaded);
-  };
 
   const handleFileEvent = (e) => {
     e.preventDefault();
-    const chosenFiles = Array.prototype.slice.call(e.target.files);
 
     const form = e.target.form;
     const formdata = new FormData(form);
@@ -116,9 +93,50 @@ function App() {
     }
   };
 
-  const handleChatInputChange = (e) => {
-    setChatInput(e.target.value);
+  const askQuestion = (e) => {
+    const selected_names = selectedFiles.map((f) => f.pdf_name)
+
+    fetch("http://127.0.0.1:5000/selected", {
+      method : 'POST',
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        'selected_pdf_files' : selected_names,
+      }),
+    }).then((response) => {
+      if(!response.ok){
+          throw new Error("Selection Unsuccessful");
+      }
+      return response.json();
+    }).then((jsonResponse) => {
+      console.log(jsonResponse)
+    }).catch((e) => {
+      console.error(`Error : ${e}`);
+    });
+
+    fetch("http://127.0.0.1:5000/question", {
+      method : 'POST',
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        'question' : chatInput,
+      }),
+    }).then((response) => {
+      if(!response.ok){
+          throw new Error("Query Unsuccessful");
+      }
+      return response.json();
+    }).then((jsonResponse) => {
+      console.log(jsonResponse);
+      const newArray = [...summaryText, chatInput, jsonResponse.answer]
+      setSummaryText(newArray)
+      setChatInput("")
+    }).catch((e) => {
+      console.error(`Error : ${e}`);
+    });
   };
+
+  const handleChatInputChange = (e) =>{
+    setChatInput(e.target.value);
+  }
 
   const handleDeleteFile = (file_obj) => {
     fetch(`http://127.0.0.1:5000/delete/${file_obj._id}`, {
@@ -126,16 +144,16 @@ function App() {
       headers: { "Content-Type": "application/json" },
       credentials: "include",
     })
-      .then((response) => {
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        return response.json();
-      })
-      .then(() => {
-        updateHistory();
-          const newSelectedFiles = selectedFiles.filter((f) => f.actual_pdf_name !== file_obj.actual_pdf_name);
-          setSelectedFiles(newSelectedFiles); // Set the new array after deletion
-      }) // Refresh the history after deletion
-      .catch((error) => console.error("Error during fetch:", error));
+    .then((response) => {
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      return response.json();
+    })
+    .then(() => {
+      updateHistory();
+      const newSelectedFiles = selectedFiles.filter((f) => f.actual_pdf_name !== file_obj.actual_pdf_name);
+      setSelectedFiles(newSelectedFiles); // Set the new array after deletion
+    }) // Refresh the history after deletion
+    .catch((error) => console.error("Error during fetch:", error));
   };
 
   const truncateFileName = (fileName) => {
@@ -263,17 +281,30 @@ function App() {
           </button>
         </div>
         <div className="summary">
-          <p>{summaryText || " Summary will appear here..."}</p>
+          {summaryText.map((dialog, index) => {
+          if (index % 2 === 0) {
+            // Even index: question
+            return <div key={index} className="question">{dialog}</div>;
+          } else {
+            // Odd index: answer
+            return <div key={index} className="answer">{dialog}</div>;
+          }
+          })}
         </div>
-        <form>
+        <div className="chatbox-container">
+          <form>
           <textarea
             id="chatbox"
-            placeholder="Ask about the PDF...."
+            placeholder="Ask about the PDF..."
             value={chatInput}
             onChange={handleChatInputChange}
             rows="3"
           />
-        </form>
+          </form>
+          <button className="send-button" onClick={askQuestion}>
+             <img src={sendIcon} alt="send" className="send-icon" />
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -156,9 +156,6 @@ def clear_documents():
 
 @app.route('/selected', methods=['POST'])
 def select_pdf():
-    if not current_user.is_authenticated:
-        return jsonify({'error' : 'user is not logged in!'})
-    
     if request.is_json:
         data = request.get_json()
 
