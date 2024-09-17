@@ -6,17 +6,35 @@ import downloadIcon from "./assets/download-svgrepo-com.png";
 import sendIcon from "./assets/send-svgrepo-com.png";
 import "./index.css";
 
-const MAX_COUNT = 50;
 const MAX_FILE_NAME_LENGTH = 10;
 
 function App() {
-  const [uploadedFiles, setUploadedFiles] = useState([]);
   const [selectedFiles, setSelectedFiles] = useState([]);
-  const [fileLimit, setFileLimit] = useState(false);
   const [chatInput, setChatInput] = useState("");
   const [summaryText, setSummaryText] = useState([]);
   const navigate = useNavigate();
   const [fileHistory, setfileHistory ] = useState([]);
+
+  const tempUpdateFileHistory = (history)=>{
+    const newArray = [...history];
+    setfileHistory(newArray);
+  }
+
+  const updateHistory = () => {
+    fetch("http://127.0.0.1:5000/history", {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+    })
+    .then((response) => {
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      return response.json();
+    })
+    .then((jsonResponse) => {
+      tempUpdateFileHistory(jsonResponse.history)
+    })
+    .catch((error) => console.error("Error during fetch:", error));
+  };
 
   useEffect(() => {
     fetch("http://127.0.0.1:5000/account", {
@@ -37,26 +55,11 @@ function App() {
       if(jsonResponse.error){
         navigate("/");
       }
+      updateHistory()
     })
     .catch((error) => {
       console.error("Error during fetch:", error);
     });
-    updateHistory()
-  }, []);
-
-
-  const updateHistory = useCallback(() => {
-    fetch("http://127.0.0.1:5000/history", {
-      method: "GET",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-    })
-    .then((response) => {
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      return response.json();
-    })
-    .then((jsonResponse) => setfileHistory(jsonResponse.history))
-    .catch((error) => console.error("Error during fetch:", error));
   }, []);
 
 
@@ -77,10 +80,10 @@ function App() {
         return response.json();
     }).then((jsonResponse) => {
         console.log(jsonResponse);
+        updateHistory();
     }).catch((e) => {
         console.error(`Error : ${e}`);
     });
-    updateHistory();
   };
 
   const handleClearFiles = () => {
@@ -148,7 +151,8 @@ function App() {
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       return response.json();
     })
-    .then(() => {
+    .then((jsonResponse) => {
+      console.log(jsonResponse);
       updateHistory();
       const newSelectedFiles = selectedFiles.filter((f) => f.actual_pdf_name !== file_obj.actual_pdf_name);
       setSelectedFiles(newSelectedFiles); // Set the new array after deletion
@@ -242,11 +246,10 @@ function App() {
                 id="upload_pdf_btn"
                 name="pdf_file"
                 onChange={handleFileEvent}
-                disabled={fileLimit}
               />
               <label
                 htmlFor="upload_pdf_btn"
-                className={`label_pdf_btn ${!fileLimit ? "" : "disabled"}`}
+                className="label_pdf_btn"
               >
                 <img src={uploadIcon} height="25" width="25" alt="upload icon" />
                 <span>Upload</span>
