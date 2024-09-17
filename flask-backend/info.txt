@@ -1,0 +1,19 @@
+should have python3.10, docker, venv installed 
+create virtual env venv
+activate
+install from requirements.txt
+create pdf_files folder
+download model inside MLmodel/project_convex
+create .env.local with SECRET_KEY = YOUR_SECRET_KEY and convex variables
+start weaviate-:docker compose up (keep this running)
+run weaviateSchema one time 
+npm init -y && npm install convex
+npx convex dev
+python3 run.py
+
+for radhe:
+terminal-1:
+npx convex dev
+terminal-2:
+source venv/bin/activate
+python3 run.py
