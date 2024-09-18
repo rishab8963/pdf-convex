@@ -16,10 +16,12 @@ const AuthPage = () => {
     setError(null); // Clear error when switching modes
   };
   
+  const url = "http://127.0.0.1:5000"
+
   const handleAuthSubmit = (e) => {
     e.preventDefault();
     if (isSignUp && password === confirmPassword) {
-      fetch("http://127.0.0.1:5000/registration", {
+      fetch(url+"/registration", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -51,7 +53,7 @@ const AuthPage = () => {
       // Sign-Up Logic
     } else if(!isSignUp){
       // Sign-In Logic
-      fetch("http://127.0.0.1:5000/login", {
+      fetch(url+"/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -15,13 +15,15 @@ function App() {
   const navigate = useNavigate();
   const [fileHistory, setfileHistory ] = useState([]);
 
+  const url = "http://127.0.0.1:5000";
+
   const tempUpdateFileHistory = (history)=>{
     const newArray = [...history];
     setfileHistory(newArray);
   }
 
   const updateHistory = () => {
-    fetch("http://127.0.0.1:5000/history", {
+    fetch(url+"/history", {
       method: "GET",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
@@ -37,7 +39,7 @@ function App() {
   };
 
   useEffect(() => {
-    fetch("http://127.0.0.1:5000/account", {
+    fetch(url+"/account", {
       method: "GET", // Specifies the HTTP method as GET
       headers: {
         "Content-Type": "application/json",
@@ -69,7 +71,7 @@ function App() {
     const form = e.target.form;
     const formdata = new FormData(form);
 
-    fetch("http://127.0.0.1:5000/upload", {
+    fetch(url+"/upload", {
         method : 'POST',
         credentials : 'include',
         body : formdata
@@ -100,7 +102,7 @@ function App() {
     const selected_names = selectedFiles.map((f) => f.pdf_name)
 
     try{
-      const selectedResponse = await fetch("http://127.0.0.1:5000/selected", {
+      const selectedResponse = await fetch(url+"/selected", {
         method : 'POST',
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -115,7 +117,7 @@ function App() {
       const selectedJsonResponse = await selectedResponse.json();
       console.log(selectedJsonResponse);
   
-      const questionResponse = await fetch("http://127.0.0.1:5000/question", {
+      const questionResponse = await fetch(url+"/history", {
         method : 'POST',
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -143,7 +145,7 @@ function App() {
   }
 
   const handleDeleteFile = (file_obj) => {
-    fetch(`http://127.0.0.1:5000/delete/${file_obj._id}`, {
+    fetch(url+`/delete/${file_obj._id}`, {
       method: "GET",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
@@ -171,7 +173,7 @@ function App() {
   const handleLogout = () => {
     // Logic for logging out
     console.log("Logging out...");
-    fetch("http://127.0.0.1:5000/logout", {
+    fetch(url+"/logout", {
       method: "GET", // Specifies the HTTP method as GET
       headers: {
         "Content-Type": "application/json",
@@ -213,7 +215,7 @@ function App() {
                     }`}
                   >
                     <span>{truncateFileName(file_obj.actual_pdf_name)}</span>
-                    <a href={`http://127.0.0.1:5000/download/${file_obj._id}`}>
+                    <a href={url+`/download/${file_obj._id}`}>
                     <img
                       src={downloadIcon}
                       alt="download"
