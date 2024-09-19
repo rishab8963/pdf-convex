@@ -1,0 +1,192 @@
+Deployment Notes:-
+
+Make sure to have python3.10, docker, venv, node lts/iron, nginx
+apt install cmake build-essential python3-dev
+git clone
+backend:-------------------------------------------------------------------------------------------------------------------------------------------------------
+npm install
+create virtual environment
+install from requirements.txt
+run download.sh
+create a new folder inside flask-backend pdf_files
+
+create a .env.local file with your secret key with and convex url 
+SECRET_KEY = 'abcd'
+npx convex deploy
+
+
+run weaviate: docker compose up
+create a service: nano /etc/systemd/system/docker_weaviate.service
+[Unit]
+Description=Weaviate Docker VectorDB
+After=network.target
+
+[Service]
+User=root
+WorkingDirectory=/root/pdf-convex/flask-backend/MLmodel/project_convex 
+# Replace with the actual path
+ExecStart=docker compose up
+
+[Install]
+WantedBy=multi-user.target
+
+
+for reloading daemon
+systemctl daemon-reload
+
+
+remove debug=True from run.py and run with gunicorn
+create a service -> flask_app.service
+[Unit]
+Description=Flask App Gunicorn
+After=network.target
+
+[Service]
+User=root
+WorkingDirectory=/root/pdf-convex/flask-backend
+# Replace with the actual path
+Environment="PATH=/root/pdf-convex/flask-backend/venv/bin"
+ExecStart=/root/pdf-convex/flask-backend/venv/bin/gunicorn --bind 127.0.0.1:5000 --timeout 180 run:app
+
+[Install]
+WantedBy=multi-user.target
+
+
+frontend:------------------------------------------------------------------------------------------------------------------------------------------------------
+
+npm install
+change the url in App.jsx and AuthPage.jsx to your linode server ip 
+npm run build
+cp -r dist /var/www/dist
+set up firewall----
+apt install ufw 
+ufw allow "Nginx Full"
+ufw allow ssh
+
+configure domain on https://freedns.afraid.org/subdomain/
+nano /etc/nginx/sites-available/react
+                                          
+server {
+  listen 80;
+
+  location / {
+        root /var/www/dist;
+        index  index.html index.htm;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        try_files $uri $uri/ /index.html;
+  }
+  
+
+  location /question {
+        proxy_pass http://127.0.0.1:5000/question;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Prefix /;
+  }
+
+
+  location /registration {
+        proxy_pass http://127.0.0.1:5000/registration;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Prefix /;
+  }
+
+  location /login {
+        proxy_pass http://127.0.0.1:5000/login;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Prefix /;
+  }
+
+  location /upload {
+        proxy_pass http://127.0.0.1:5000/upload;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Prefix /;
+  }
+
+  location /selected {
+        proxy_pass http://127.0.0.1:5000/selected;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Prefix /;
+  }
+
+  location /history {
+        proxy_pass http://127.0.0.1:5000/history;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Prefix /;
+  }
+
+  location /logout {
+        proxy_pass http://127.0.0.1:5000/logout;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Prefix /;
+  }
+
+  location /account {
+        proxy_pass http://127.0.0.1:5000/account;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Prefix /;
+  }
+
+  location /delete {
+        proxy_pass http://127.0.0.1:5000/delete;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Prefix /;
+  }
+
+  location /download {
+        proxy_pass http://127.0.0.1:5000/download;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Prefix /;
+  }
+}
+
+
+ln -s /etc/nginx/sites-available/react /etc/nginx/sites-enabled/react
+systemctl restart nginx
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
