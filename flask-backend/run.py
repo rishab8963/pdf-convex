@@ -1,14 +1,13 @@
-from crypt import methods
 import os
 import secrets
 import shutil
-from datetime import datetime, timedelta
+from datetime import datetime
 from flask import Flask, request, jsonify, send_file
 from flask_bcrypt import Bcrypt
-from flask_login import LoginManager, login_user, UserMixin, login_required, current_user, logout_user
+from flask_login import LoginManager, login_user, UserMixin, current_user, logout_user
 from flask_cors import CORS
 from convex import ConvexClient
-from MLmodel.project_convex.model import predict
+from MLmodel.project_convex.model import *
 
 # from ml import predict
 from dotenv import load_dotenv
@@ -102,9 +101,6 @@ def login():
         if bcrypt.check_password_hash(exist_user["password"] , password):
             user = User(exist_user["_id"], exist_user["username"], exist_user["email"], exist_user["password"])
             login_user(user)
-            print(current_user.get_id())
-            print(current_user.email)
-            print(current_user.is_authenticated)
             return jsonify({"message": "Login successful"})
         else:
             return jsonify({"error" : "Invalid Password"})

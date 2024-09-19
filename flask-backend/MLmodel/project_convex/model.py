@@ -2,7 +2,6 @@ import weaviate
 from llama_cpp import Llama
 import pymupdf
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-import time
 import os
 
 client = weaviate.Client(
@@ -10,8 +9,8 @@ client = weaviate.Client(
 )
 
 template = """
-You are a helpful assistant who answers questions using the provided context. If you don't know the answer, 
-simply state that you don't know.
+You are a helpful assistant who answers questions using the provided context if you don't 
+know the answer simply state that you don't know.
 
 {context}
 
@@ -28,7 +27,7 @@ text_splitter = RecursiveCharacterTextSplitter(
 )
 
 # Load the model
-model2 = Llama(model_path="./MLmodel/project_convex/bge-small-en-v1.5-f16.gguf", embedding=True, verbose=False)
+model2 = Llama(model_path="./MLmodel/project_convex/mxbai-embed-large-v1-f16.gguf", embedding=True, verbose=False)
 
 
 def load():

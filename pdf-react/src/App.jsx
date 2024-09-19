@@ -65,7 +65,7 @@ function App() {
   }, []);
 
 
-  const handleFileEvent = (e) => {
+  const handleFileUpload = (e) => {
     e.preventDefault();
 
     const form = e.target.form;
@@ -117,7 +117,7 @@ function App() {
       const selectedJsonResponse = await selectedResponse.json();
       console.log(selectedJsonResponse);
   
-      const questionResponse = await fetch(url+"/history", {
+      const questionResponse = await fetch(url+"/question", {
         method : 'POST',
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -248,7 +248,7 @@ function App() {
                 accept="application/pdf"
                 id="upload_pdf_btn"
                 name="pdf_file"
-                onChange={handleFileEvent}
+                onChange={handleFileUpload}
               />
               <label
                 htmlFor="upload_pdf_btn"
@@ -298,7 +298,6 @@ function App() {
           })}
         </div>
         <div className="chatbox-container">
-          <form>
           <textarea
             id="chatbox"
             placeholder="Ask about the PDF..."
@@ -306,7 +305,6 @@ function App() {
             onChange={handleChatInputChange}
             rows="3"
           />
-          </form>
           <button className="send-button" onClick={askQuestion}>
              <img src={sendIcon} alt="send" className="send-icon" />
           </button>

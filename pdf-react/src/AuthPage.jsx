@@ -7,7 +7,7 @@ const AuthPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [username, setUsername] = useState(""); // Added state for username
+  const [username, setUsername] = useState(""); 
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
