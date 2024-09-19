@@ -15,6 +15,7 @@ Flask==3.0.3
 Flask-Bcrypt==1.0.1
 Flask-Cors==5.0.0
 Flask-Login==0.6.3
+gunicorn==23.0.0
 h11==0.14.0
 httpcore==1.0.5
 httpx==0.27.2
