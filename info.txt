@@ -11,7 +11,8 @@ run download.sh
 create a new folder inside flask-backend pdf_files
 
 create a .env.local file with your secret key with and convex url 
-SECRET_KEY = 'abcd'
+SECRET_KEY='abcd'
+npx convex dev
 npx convex deploy
 
 
@@ -55,7 +56,7 @@ WantedBy=multi-user.target
 frontend:------------------------------------------------------------------------------------------------------------------------------------------------------
 
 npm install
-change the url in App.jsx and AuthPage.jsx to your linode server ip 
+change the url in App.jsx and AuthPage.jsx to your https://domain
 npm run build
 cp -r dist /var/www/dist
 set up firewall----
@@ -68,6 +69,7 @@ nano /etc/nginx/sites-available/react
                                           
 server {
   listen 80;
+  server_name novafrost.strangled.net;
   # This is for the frontend serving the built files inside /var/www/dist
   location / {
         root /var/www/dist;
@@ -84,6 +86,7 @@ server {
   location /question {
         proxy_pass http://127.0.0.1:5000/question;
         proxy_http_version 1.1;
+        proxy_read_timeout 180s;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
         proxy_set_header Host $host;
@@ -113,6 +116,7 @@ server {
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
+        client_max_body_size 20M;
         proxy_set_header Host $host;
         proxy_cache_bypass $http_upgrade;
   }
@@ -176,26 +180,6 @@ server {
 ln -s /etc/nginx/sites-available/react /etc/nginx/sites-enabled/react
 systemctl restart nginx
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+for https
+apt install certbot python3-certbot-nginx
+certbot --nginx -d novafrost.strangled.net 
