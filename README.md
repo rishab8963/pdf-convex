@@ -1,4 +1,6 @@
 # Pdf-Convex
+## Deployment
+This project is currently deployed/live on https://novafrost.strangled.net <br>
 ## Project Set-up Instructions
 Make sure to have `python3.10`, `docker`, `venv`, `node lts/iron`, `nginx` <br>
 More details on how to install these -> https://github.com/Harshroxnox/linux-server-guide
