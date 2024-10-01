@@ -4,11 +4,11 @@ node_modules
 __pycache__/
 .env
 pdf_files
-MLmodel/project_convex/Main-Model-7.2B-Q5_K_M.gguf
-MLmodel/project_convex/Phi-3-mini-4k-instruct-q4.gguf
-MLmodel/project_convex/bge-small-en-v1.5-f16.gguf
-MLmodel/project_convex/mxbai-embed-large-v1-f16.gguf
+MLmodel/project_convex/llama.cpp/
+MLmodel/project_convex/models/
 MLmodel/project_convex/.idea
 MLmodel/project_convex/__pycache__
+qdrant_storage/
+MLmodel/project_convex/qdrant_storage/
 .env.local
 .vscode/*

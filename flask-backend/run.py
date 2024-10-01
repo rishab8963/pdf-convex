@@ -1,15 +1,14 @@
 import os
 import secrets
-import shutil
 from datetime import datetime
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify, send_file, Response, stream_with_context
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, login_user, UserMixin, current_user, logout_user
 from flask_cors import CORS
 from convex import ConvexClient
 from MLmodel.project_convex.model import *
 
-# from ml import predict
+
 from dotenv import load_dotenv
 load_dotenv(".env.local")
 load_dotenv()
@@ -27,6 +26,7 @@ login_manager.init_app(app)
 
 app.config['SESSION_COOKIE_SECURE'] = True 
 app.config['SESSION_COOKIE_SAMESITE'] = 'None'
+
 
 class User(UserMixin):
     def __init__(self, id_of_user, username, email, password):
@@ -50,17 +50,17 @@ def load_user(user_id):
 def question():
     if request.is_json:
         data = request.get_json()
-
         user_query = data.get('question', None)
 
         if user_query is None:
             return jsonify({'error': 'No question provided'}),400
-        else:
-            user_query = str(user_query)
-            ans = predict(user_query)
-            ans = str(ans)
 
-        return jsonify({"answer":ans})
+        user_query = str(user_query)
+        prompt = vector_search(user_query)
+        ans = query(prompt)
+        ans = ans.content
+        ans = str(ans)
+        return jsonify({"answer": ans})
 
     else:
         return jsonify({"error": "Request must be JSON"}), 400
@@ -81,7 +81,7 @@ def registration():
         hashed_password = bcrypt.generate_password_hash(data.get('password')).decode('utf-8')
         client.mutation("tasks:createAccount", dict(username=username, email=email, password=hashed_password))
         
-        return jsonify({'message' : 'Successfully Registered'})
+        return jsonify({'message': 'Successfully Registered'})
 
     else:
         return jsonify({"error": "Request must be JSON"}), 400
@@ -95,15 +95,15 @@ def login():
         email = data.get('email')
         exist_user = client.query("tasks:check_email", dict(email=email))
         if exist_user is None:
-            return jsonify({"error" : "Email is not registered"})
+            return jsonify({"error": "Email is not registered"})
 
         password = data.get('password')
-        if bcrypt.check_password_hash(exist_user["password"] , password):
+        if bcrypt.check_password_hash(exist_user["password"], password):
             user = User(exist_user["_id"], exist_user["username"], exist_user["email"], exist_user["password"])
             login_user(user)
             return jsonify({"message": "Login successful"})
         else:
-            return jsonify({"error" : "Invalid Password"})
+            return jsonify({"error": "Invalid Password"})
 
     else:
         return jsonify({"error": "Request must be JSON"}), 400
@@ -122,7 +122,7 @@ def save_pdf(pdf):
 @app.route('/upload', methods=['POST'])
 def upload_pdf():
     if not current_user.is_authenticated:
-        return jsonify({'error' : 'user is not logged in!'})
+        return jsonify({'error': 'user is not logged in!'})
 
     if 'pdf_file' not in request.files:
         return jsonify({'error': "pdf file not found"})
@@ -139,17 +139,6 @@ def upload_pdf():
     return jsonify({'message': 'All PDF uploaded successfully'})
 
 
-def clear_documents():
-    # delete all the existing files
-    folder_path = os.path.join(app.root_path, 'MLmodel/project_convex/documents')
-    if not os.listdir(folder_path):
-        return
-
-    for file_name in os.listdir(folder_path):
-        file_path = os.path.join(folder_path, file_name)
-        os.remove(file_path)
-
-
 @app.route('/selected', methods=['POST'])
 def select_pdf():
     if request.is_json:
@@ -163,12 +152,14 @@ def select_pdf():
     if len(selected_pdf_name_array) == 0:
         return jsonify({'error': "pdf file not selected"})
 
-    clear_documents()
+    # clear_documents()
+    pdf_array = []
     for pdf_name in selected_pdf_name_array:
         file_path = os.path.join(app.root_path, 'pdf_files', pdf_name)
-        destination_path = os.path.join(app.root_path, 'MLmodel/project_convex/documents')
-        shutil.copy(file_path,destination_path)
+        _pdf_file = pymupdf.open(file_path)
+        pdf_array.append(_pdf_file)
 
+    insert_pdf_vectordb(pdf_array)
     return jsonify({'message': 'All PDF selected successfully'})
 
 
@@ -181,8 +172,8 @@ def get_pdf(file_id):
     actual_name = pdf.get("actual_pdf_name")
     path = os.path.join(app.root_path, 'pdf_files', pdf_name)
 
-    return send_file(path_or_file=path,as_attachment=True,
-        download_name= str(actual_name),mimetype='application/pdf')
+    return send_file(path_or_file=path, as_attachment=True,
+        download_name=str(actual_name), mimetype='application/pdf')
 
 
 @app.route('/delete/<string:file_id>')
@@ -200,11 +191,11 @@ def delete_pdf(file_id):
 @app.route('/history')
 def history():
     if not current_user.is_authenticated:
-        return jsonify({'error' : 'user is not logged in!'})
+        return jsonify({'error': 'user is not logged in!'})
 
     id=current_user.id
     history=client.query("tasks:pdf_details", dict(user_id=id))
-    return jsonify({'history' : history})
+    return jsonify({'history': history})
 
 
 @app.route('/logout')
@@ -223,6 +214,7 @@ def account():
     if not current_user.is_authenticated:
         return jsonify({'error' : 'user is not logged in!, Cant show account'})
     return jsonify({"message" : "{} is currently logged in".format(current_user.username)})
+
 
 if __name__ == '__main__':
     app.run(debug=True)

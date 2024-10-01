@@ -1,23 +1,23 @@
-import weaviate
-from llama_cpp import Llama
-import pymupdf
+from qdrant_client.models import Distance, VectorParams, PointStruct
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-import os
+from qdrant_client import QdrantClient
+import pymupdf
+import llama_cpp
+import uuid
+from openai import OpenAI
 
-client = weaviate.Client(
-    url="http://localhost:8080"
-)
 
 template = """
-You are a helpful assistant who answers questions using the provided context if you don't 
-know the answer simply state that you don't know.
+You are a helpful assistant who answers questions using the provided context. If you don't know the answer, 
+simply state that you don't know.
 
 {context}
 
 Question: {question}"""
 
-# Load the model
-model = Llama(model_path="./MLmodel/project_convex/Main-Model-7.2B-Q5_K_M.gguf", n_ctx=2048)
+qdrant_client = QdrantClient(host="localhost", port=6333)
+
+llm_client = OpenAI(base_url="http://localhost:8080/v1", api_key="abcd")
 
 text_splitter = RecursiveCharacterTextSplitter(
     chunk_size=300,
@@ -26,96 +26,113 @@ text_splitter = RecursiveCharacterTextSplitter(
     is_separator_regex=False
 )
 
-# Load the model
-model2 = Llama(model_path="./MLmodel/project_convex/mxbai-embed-large-v1-f16.gguf", embedding=True, verbose=False)
+embedding_model = llama_cpp.Llama(
+    model_path="MLmodel/project_convex/models/mxbai-embed-large-v1-f16.gguf",
+    embedding=True,
+    verbose=False,
+)
 
 
-def load():
-    folder_path = os.path.join('MLmodel/project_convex/documents')
+def pdf_to_documents(arr_docs):
     text = ""
-    # Open a document
-    for file_name in os.listdir(folder_path):
-        doc_ = pymupdf.open("./MLmodel/project_convex/documents/{}".format(file_name))
+    for doc in arr_docs:
         # Extract all the text from the pdf document
-        for page in doc_:
+        for page in doc:
             result = page.get_text()
-            text+= result
+            text += result
 
-    return text
+    return text_splitter.create_documents([text])
 
 
-def storeVectorDB(text):
-    # delete class "Pdf" - THIS WILL DELETE ALL DATA IN THIS CLASS
-    client.schema.delete_class("Pdf")
-
-    # Weaviate schema creation (if not already created)
-    class_obj = {
-        "class": "Pdf",
-        "vectorizer": "none",
-    }
-
-    # Create the schema in Weaviate
-    client.schema.create_class(class_obj)
-    documents = text_splitter.create_documents([text])
-
-    document_embeddings = []
+def generate_doc_embeddings(_documents):
+    local_document_embeddings = []
     # Generate Embeddings for every single document in documents and append it into document_embeddings
-    for document in documents:
-        embeddings = model2.create_embedding([document.page_content])
-        document_embeddings.append({
-            "content": document.page_content,
-            "embedding": embeddings["data"][0]["embedding"]
-    })
-    # Insert embeddings into Weaviate
-    client.batch.configure(batch_size=100)
-    with client.batch as batch:
-        for doc in document_embeddings:
-            properties = {
-              "content": doc["content"],
-            }
-        
-            batch.add_data_object(properties, "Pdf", vector=doc['embedding'])
-     
+    for document in _documents:
+        embeddings = embedding_model.create_embedding([document.page_content])
+        local_document_embeddings.extend([
+            (document, embeddings["data"][0]["embedding"])
+        ])
 
-def sawal(query_user):
-    # Generate Embeddings for every single document in documents and append it into document_embeddings
-    query_embeddings = model2.create_embedding(query_user)
-    query_vector=query_embeddings['data'][0]["embedding"]
+    return local_document_embeddings
 
-    nearVector = {
-        "vector": query_vector
-    }
 
-    result = (
-        client.query.get("Pdf", ["content"])
-        .with_near_vector(
-            nearVector
-        )
-        .with_limit(5)
-        .with_additional(['certainty'])
-        .do()
+def insert_in_db(_document_embeddings):
+    # If collection VectorDB exists then delete
+    if qdrant_client.collection_exists(collection_name="VectorDB"):
+        qdrant_client.delete_collection(collection_name="VectorDB")
+
+    qdrant_client.create_collection(
+        collection_name="VectorDB",
+        vectors_config=VectorParams(size=1024, distance=Distance.COSINE),
     )
-    # Get the result
-    result = result['data']['Get']['Pdf']
 
-    response=model.create_chat_completion(
-    messages=[
+    points = [
+        PointStruct(
+            id=str(uuid.uuid4()),
+            vector=embeddings,
+            payload={
+                "text": document.page_content
+            }
+        )
+        for document, embeddings in _document_embeddings
+    ]
+
+    operation_info = qdrant_client.upsert(
+        collection_name="VectorDB",
+        wait=True,
+        points=points
+    )
+
+    print("\n")
+    print("operation_info: ")
+    print(operation_info)
+
+
+def vector_search(_search_query):
+    query_vector = embedding_model.create_embedding(_search_query)['data'][0]['embedding']
+    search_result = qdrant_client.search(
+        collection_name="VectorDB",
+        query_vector=query_vector,
+        limit=3
+    )
+
+    print("\n")
+    print("search_result: ")
+    print(search_result)
+
+    context = "".join([row.payload['text'] for row in search_result])
+    context = context.replace('\n', ' ')
+
+    _messages = [
         {"role": "user", "content": template.format(
-            context="\n\n".join(result[0]['content']),
-            question=query_user
+            context=context,
+            question=_search_query
         )}
     ]
-    # ,
-    #   stream=True
+
+    print("\n")
+    print("Prompt: ")
+    print(_messages[0]["content"])
+    return _messages
+
+
+def query(_messages):
+    response = llm_client.chat.completions.create(
+        model="Phi-3.5-Instruct",
+        messages=_messages
+        #stream=True
     )
-    return response['choices'][0]['message']['content']
 
-# for chunk in stream:
-#     print(chunk['choices'][0]['delta'].get('content', ''), end='')
+    # for chunk in response:
+    #     if chunk.choices[0].delta.content is not None:
+    #         yield(chunk.choices[0].delta.content)
+    print(response.choices[0].message)
+    return response.choices[0].message
 
 
-def predict(question):
-    text = load()
-    storeVectorDB(text)
-    answer = sawal(question)
-    return answer
+def insert_pdf_vectordb(_arr_docs):
+    documents = pdf_to_documents(_arr_docs)
+
+    document_embeddings = generate_doc_embeddings(documents)
+
+    insert_in_db(document_embeddings)
