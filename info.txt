@@ -115,9 +115,14 @@ server {
         proxy_pass http://127.0.0.1:5000/question;
         proxy_http_version 1.1;
         proxy_read_timeout 180s;
+
+        # Headers to allow the connection to remain open for streaming
         proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
+        proxy_set_header Connection 'keep-alive';
         proxy_set_header Host $host;
+
+        # Disable buffering to handle streaming properly
+        proxy_buffering off;
         proxy_cache_bypass $http_upgrade;
   }
 
