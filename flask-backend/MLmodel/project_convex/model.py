@@ -119,15 +119,13 @@ def vector_search(_search_query):
 def query(_messages):
     response = llm_client.chat.completions.create(
         model="Phi-3.5-Instruct",
-        messages=_messages
-        #stream=True
+        messages=_messages,
+        stream=True
     )
 
-    # for chunk in response:
-    #     if chunk.choices[0].delta.content is not None:
-    #         yield(chunk.choices[0].delta.content)
-    print(response.choices[0].message)
-    return response.choices[0].message
+    for chunk in response:
+        if chunk.choices[0].delta.content is not None:
+            yield chunk.choices[0].delta.content
 
 
 def insert_pdf_vectordb(_arr_docs):

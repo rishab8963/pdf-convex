@@ -7,9 +7,8 @@ from flask_login import LoginManager, login_user, UserMixin, current_user, logou
 from flask_cors import CORS
 from convex import ConvexClient
 from MLmodel.project_convex.model import *
-
-
 from dotenv import load_dotenv
+
 load_dotenv(".env.local")
 load_dotenv()
 
@@ -41,7 +40,7 @@ class User(UserMixin):
 
 @login_manager.user_loader
 def load_user(user_id):
-    exist_user=client.query("tasks:get_user", dict(_id=user_id))
+    exist_user = client.query("tasks:get_user", dict(_id=user_id))
     user = User(user_id, exist_user["username"], exist_user["email"], exist_user["password"])
     return user
 
@@ -57,10 +56,7 @@ def question():
 
         user_query = str(user_query)
         prompt = vector_search(user_query)
-        ans = query(prompt)
-        ans = ans.content
-        ans = str(ans)
-        return jsonify({"answer": ans})
+        return Response(stream_with_context(query(prompt)), content_type='text/plain')
 
     else:
         return jsonify({"error": "Request must be JSON"}), 400
@@ -110,13 +106,17 @@ def login():
 
 
 def save_pdf(pdf):
-    random_hex = secrets.token_hex(8) #just to make file name unique
-    f_name, f_ext = os.path.splitext(pdf.filename) #.filename to extract filename from the uploaded pic
+    # just to make file name unique
+    random_hex = secrets.token_hex(8)
+    # .filename to extract filename from the uploaded pic
+    f_name, f_ext = os.path.splitext(pdf.filename)
     pdf_fn = random_hex + f_ext
     # now we need to get full path where this pdf will be stored
     save_pdf_path = os.path.join(app.root_path, 'pdf_files', pdf_fn)
-    pdf.save(save_pdf_path) #save pdf to that path
-    return pdf_fn #returning pdf name so we can use it to change in database
+    # save pdf to that path
+    pdf.save(save_pdf_path)
+    # returning pdf name so we can use it to change in database
+    return pdf_fn
 
 
 @app.route('/upload', methods=['POST'])
@@ -130,11 +130,11 @@ def upload_pdf():
     pdf_array = request.files.getlist('pdf_file')
 
     for pdf in pdf_array:
-        actual_pdf_name=pdf.filename
+        actual_pdf_name = pdf.filename
         pdf_name = save_pdf(pdf)
-        user_id=current_user.id
-        upload_date=datetime.now().strftime('%d-%m-%Y %H-%M-%S')
-        client.mutation("tasks:pdf_history", dict(pdf_name=pdf_name,actual_pdf_name=actual_pdf_name, user_id=user_id,upload_date=upload_date))
+        user_id = current_user.id
+        upload_date = datetime.now().strftime('%d-%m-%Y %H-%M-%S')
+        client.mutation("tasks:pdf_history", dict(pdf_name=pdf_name, actual_pdf_name=actual_pdf_name, user_id=user_id, upload_date=upload_date))
 
     return jsonify({'message': 'All PDF uploaded successfully'})
 
@@ -167,7 +167,7 @@ def select_pdf():
 def get_pdf(file_id):
     pdf=client.query("tasks:get_pdf_name", dict(_id=file_id))
     if not pdf:
-        return jsonify({"error" : "no pdf"})
+        return jsonify({"error": "no pdf"})
     pdf_name = pdf.get("pdf_name")
     actual_name = pdf.get("actual_pdf_name")
     path = os.path.join(app.root_path, 'pdf_files', pdf_name)
@@ -178,14 +178,14 @@ def get_pdf(file_id):
 
 @app.route('/delete/<string:file_id>')
 def delete_pdf(file_id):
-    pdf=client.query("tasks:get_pdf_name", dict(_id=file_id))
+    pdf = client.query("tasks:get_pdf_name", dict(_id=file_id))
     print(pdf)
     pdf_name = pdf.get("pdf_name")
     client.mutation("tasks:deletepdf", dict(id=file_id))
     path = os.path.join(app.root_path, 'pdf_files', pdf_name)
     os.remove(path)
 
-    return jsonify({"message" : "Pdf deteled successfully"})
+    return jsonify({"message": "Pdf deleted successfully"})
 
 
 @app.route('/history')
@@ -193,16 +193,16 @@ def history():
     if not current_user.is_authenticated:
         return jsonify({'error': 'user is not logged in!'})
 
-    id=current_user.id
-    history=client.query("tasks:pdf_details", dict(user_id=id))
-    return jsonify({'history': history})
+    usr_id = current_user.id
+    _history = client.query("tasks:pdf_details", dict(user_id=usr_id))
+    return jsonify({'history': _history})
 
 
 @app.route('/logout')
 def logout():
     print("logout")
     if not current_user.is_authenticated:
-        return jsonify({'error' : 'user is not logged in! ,Cant logout'})
+        return jsonify({'error': 'user is not logged in! ,Cant logout'})
 
     logout_user_name = current_user.username
     logout_user()
@@ -212,8 +212,8 @@ def logout():
 @app.route('/account')
 def account():
     if not current_user.is_authenticated:
-        return jsonify({'error' : 'user is not logged in!, Cant show account'})
-    return jsonify({"message" : "{} is currently logged in".format(current_user.username)})
+        return jsonify({'error': 'user is not logged in!, Cant show account'})
+    return jsonify({"message": "{} is currently logged in".format(current_user.username)})
 
 
 if __name__ == '__main__':

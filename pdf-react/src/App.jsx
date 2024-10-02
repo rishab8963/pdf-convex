@@ -128,13 +128,24 @@ function App() {
       if(!questionResponse.ok){
           throw new Error("Query Unsuccessful");
       }
-  
-      const questionJsonResponse = await questionResponse.json();
-      console.log(questionJsonResponse);
-  
-      const newArray = [...summaryText, chatInput, questionJsonResponse.answer];
-      setSummaryText(newArray);
+
+      const reader = questionResponse.body.getReader();
+      const decoder = new TextDecoder('utf-8')
+      let answer = ''
+
+      while(true){
+        const {done, value} = await reader.read();
+        if(done){
+          console.log("Stream Complete");
+          break;
+        }
+        // Decode and accumulate the streamed content
+        answer += decoder.decode(value, {stream: true});
+        const newArray = [...summaryText, chatInput, answer];
+        setSummaryText(newArray);
+      }
       setChatInput("");
+
     }catch(error){
       console.log(`Error : ${error}`);
     }
