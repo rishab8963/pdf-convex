@@ -14,6 +14,7 @@ function App() {
   const [summaryText, setSummaryText] = useState([]);
   const navigate = useNavigate();
   const [fileHistory, setfileHistory ] = useState([]);
+  const [selectChanged, setSelectChanged] = useState(false);
 
   const url = "http://127.0.0.1:5000";
 
@@ -95,6 +96,7 @@ function App() {
   const handleFileClick = (file_obj) => {
     if (!selectedFiles.find((f) => f.actual_pdf_name === file_obj.actual_pdf_name)) {
       setSelectedFiles([...selectedFiles, file_obj]);
+      setSelectChanged(true);
     }
   };
 
@@ -102,21 +104,24 @@ function App() {
     const selected_names = selectedFiles.map((f) => f.pdf_name)
 
     try{
-      const selectedResponse = await fetch(url+"/selected", {
-        method : 'POST',
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          'selected_pdf_files' : selected_names,
-        }),
-      });
-      
-      if(!selectedResponse.ok){
-          throw new Error("Selection Unsuccessful");
+      if(selectChanged){
+        const selectedResponse = await fetch(url+"/selected", {
+          method : 'POST',
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            'selected_pdf_files' : selected_names,
+          }),
+        });
+        
+        if(!selectedResponse.ok){
+            throw new Error("Selection Unsuccessful");
+        }
+    
+        const selectedJsonResponse = await selectedResponse.json();
+        console.log(selectedJsonResponse);
+        setSelectChanged(false);
       }
-  
-      const selectedJsonResponse = await selectedResponse.json();
-      console.log(selectedJsonResponse);
-  
+
       const questionResponse = await fetch(url+"/question", {
         method : 'POST',
         headers: { "Content-Type": "application/json" },

@@ -9,7 +9,7 @@ from openai import OpenAI
 
 template = """
 You are a helpful assistant who answers questions using the provided context. If you don't know the answer, 
-simply state that you don't know.
+simply state that you don't know. Try to keep your answer short and precise, don't exceed 150 words.
 
 {context}
 
