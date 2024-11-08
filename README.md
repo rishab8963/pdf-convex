@@ -75,7 +75,7 @@ Then open a new terminal (make sure the venv is activated) and go to `flask-back
 ```bash
 python3 run.py
 ```
-Now our backend is up and running for setting up our frontend open a new terminal and go to pdf-react
+Now our backend is up and running for setting up our Frontend open a new terminal and go to pdf-react
 ```bash
 cd pdf-react && npm install
 ```
