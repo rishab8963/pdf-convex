@@ -7,6 +7,16 @@
 - `Qdrant` as the vector database. It is a `docker` image
 <br></br>
 ![Pdf Summarizer](https://drive.google.com/uc?export=view&id=1PiI2aMTYDNHUKVxO3GTV7M37gXe6SDLX)
+
+## Project Structure
+- RAG (Retreival Augmented Generation) system and machine learning code for llm model and converting pdf's into vector embeddings and storing them into vector databases and searching content
+related to user's query and giving it to model as a prompt. All of this code is in -->> `flask-backend/MLmodel/project_convex/model.py`<br><br>
+- All the Flask (python backend framework) backend code, routes implementation logic and user login/authentication code is in -->> `flask-backend/run.py`<br><br>
+- The frontend of this project is made with React. All the react code/implementation is in -->> `pdf-react`<br><br>
+- Convex realtime cloud database functions implementations is in -->> `flask-backend/convex/tasks.js`<br><br>
+- Shell script that downloads the embedding model, llm and clones llama.cpp repo and builds it so that we can run llm model as an http server is located
+  inside -->> `flask-backend/MLmodel/project_convex/model-setup.sh`
+
 ## Project Set-up Instructions
 Make sure to have `python3.10`, `docker`, `venv`, `node lts/iron`, `nginx` <br>
 More details on how to install these -> https://github.com/Harshroxnox/linux-server-guide
@@ -88,28 +98,3 @@ run the react app
 npm run dev
 ```
 You should be able to interact with our app on `localhost:5173`
-## Project Structure
-- RAG (Retreival Augmented Generation) system and machine learning code for llm model and converting pdf's into vector embeddings and storing them into vector databases and searching content
-related to user's query and giving it to model as a prompt. All of this code is in -->> `flask-backend/MLmodel/project_convex/model.py`<br><br>
-- All the Flask (python backend framework) backend code, routes implementation logic and user login/authentication code is in -->> `flask-backend/run.py`<br><br>
-- The frontend of this project is made with React. All the react code/implementation is in -->> `pdf-react`<br><br>
-- Convex realtime cloud database functions implementations is in -->> `flask-backend/convex/tasks.js`<br><br>
-- Shell script that downloads the embedding model, llm and clones llama.cpp repo and builds it so that we can run llm model as an http server is located
-  inside -->> `flask-backend/MLmodel/project_convex/model-setup.sh`
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
