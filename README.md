@@ -1,8 +1,12 @@
 # Pdf-Convex
-## Deployment
-This project is currently deployed/live on https://novafrost.strangled.net <br><br>
-`Note`: Kindly wait for 30-50 seconds depending on the pdf size for the first question's answer after clicking the send button 1 time. Next question's answer (if selected pdf is not changed) 
-should not take more than 15 seconds.
+## Tech-Stack
+- `React` for frontend
+- `Convex` for real time cloud based database. This is uses `nodejs`
+- `Flask` python for backend
+- `Phi-3.5-Instruct`(quantized using llama.cpp) as our llm model from `huggingface`
+- `Qdrant` as the vector database. It is a `docker` image
+<br></br>
+![Pdf Summarizer](https://drive.google.com/uc?export=view&id=1PiI2aMTYDNHUKVxO3GTV7M37gXe6SDLX)
 ## Project Set-up Instructions
 Make sure to have `python3.10`, `docker`, `venv`, `node lts/iron`, `nginx` <br>
 More details on how to install these -> https://github.com/Harshroxnox/linux-server-guide
